@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # --- INFRASTRUCTURE SERVICES ---
+  
+  zookeeper-new:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: zookeeper-new
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka-new:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: kafka-new
+    depends_on:
+      - zookeeper-new
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper-new:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka-new:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+  
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      # Expose to your laptop for debugging
+      - "27017:27017"
+    volumes:
+      # This saves your database data
+      - mongo_data:/data/db
+
+  # --- APPLICATION SERVICES ---
+
+  # 4. Frontend (React)
+  # This builds the frontend/Dockerfile and serves it
+  frontend:
+    build: ./frontend
+    image: aravindreddy9548/unit-converter-frontend:latest
+    container_name: frontend-app
+    ports:
+      # Your browser will connect to port 5500
+      - "5500:80"
+    depends_on:
+      - api-server
+
+  # 5. API Server (Node.js)
+  # This builds the api-server/Dockerfile
+  api-server:
+    build: ./api-server
+    container_name: api-server
+    ports:
+      - "5000:5000"
+    depends_on:
+      - kafka-new
+      - mongodb
+    environment:
+      # Tell the Node.js app how to find the other services
+      KAFKA_HOST: "kafka-new:29092"
+      DB_HOST: "mongodb"
+
+  # 6. Compute Worker (Node.js)
+  # This builds the compute-worker/Dockerfile
+  compute-worker:
+    build: ./compute-worker
+    container_name: compute-worker
+    depends_on:
+      - kafka-new
+      - mongodb
+    environment:
+      KAFKA_HOST: "kafka-new:29092"
+      DB_HOST: "mongodb"
+
+# --- Define the volume to store DB data ---
+volumes:
+  mongo_data:

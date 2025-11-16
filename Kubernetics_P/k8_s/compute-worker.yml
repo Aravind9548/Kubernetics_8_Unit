@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: compute-worker
+spec:
+  replicas: 1 # You could scale this to 3 or 4 to process more messages!
+  selector:
+    matchLabels:
+      app: compute-worker
+  template:
+    metadata:
+      labels:
+        app: compute-worker
+    spec:
+      containers:
+      - name: compute-worker
+        image: aravindreddy9548/unit-converter-compute:latest # <-- Your image
+        imagePullPolicy: Always # Always pull the newest version
+        env:
+          - name: KAFKA_HOST
+            value: "kafka-new:29092" # <-- Connects to the Kafka Service
+          - name: DB_HOST
+            value: "mongodb"         # <-- Connects to the Mongo Service

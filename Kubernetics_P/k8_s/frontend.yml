@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  type: NodePort # <-- Makes it public
+  ports:
+  - port: 80         # Internal Nginx port
+    targetPort: 80
+    nodePort: 30001  # <-- Public port you will access
+  selector:
+    app: frontend
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: aravindreddy9548/unit-converter-frontend:latest # <-- Your image
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
