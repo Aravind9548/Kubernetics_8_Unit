@@ -9,7 +9,7 @@ function App() {
   // THIS IS THE FIX for your "Network Error: Unexpected token '<'"
   // It now correctly points to your API server on port 5000.
   //
-  const API_URL = 'http://localhost:5000/api/convert';
+  const API_URL = 'http://unit-converter.local/api/convert';
 
   const handleFormSubmit = async (event) => {
     // 1. Prevent the form from doing a default page reload
