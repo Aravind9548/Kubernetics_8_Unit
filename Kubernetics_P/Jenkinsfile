@@ -58,7 +58,7 @@ pipeline {
                     // and apply all .yml files in your 'k8s' folder
                     bat '''
                         set KUBECONFIG=%KUBECONFIG_FILE%
-                        kubectl apply -f k8s/
+                        kubectl apply -f k8_s/
                     '''
                 }
             }
