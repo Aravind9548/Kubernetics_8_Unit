@@ -1,7 +1,12 @@
-apiVersion: networking.k8_s.io/v1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: unit-converter-ingress
+  annotations:
+    # This rewrites the path so /api/convert becomes /convert if needed
+    # (But for your app, we kept the /api prefix in the code, so we might not need this)
+    # For now, let's just fix the class name.
+    nginx.ingress.kubernetes.io/rewrite-target:
 spec:
   rules:
     - host: unit-converter.local  # The fake domain name we will use
