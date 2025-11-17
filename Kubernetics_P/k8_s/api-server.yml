@@ -3,11 +3,11 @@ kind: Service
 metadata:
   name: api-server
 spec:
-  type: NodePort # <-- Makes it public
+  type: NodePort
   ports:
-  - port: 5000       # Internal port
+  - port: 5000
     targetPort: 5000
-    nodePort: 30002  # <-- Public port you will access
+    nodePort: 30002
   selector:
     app: api-server
 ---
@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
       - name: api-server
-        image: aravindreddy9548/unit-converter-api:latest # <-- Your image
+        image: aravindreddy9548/unit-converter-api:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
@@ -36,3 +36,8 @@ spec:
             value: "kafka-new:29092"
           - name: DB_HOST
             value: "mongodb"
+          # --- DEBUGGING VARIABLES ---
+          - name: NODE_ENV
+            value: "development"
+          - name: KAFKAJS_LOG_LEVEL
+            value: "debug" # Options: nothing, error, warn, info, debug

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: compute-worker
 spec:
-  replicas: 1 # You could scale this to 3 or 4 to process more messages!
+  replicas: 1
   selector:
     matchLabels:
       app: compute-worker
@@ -14,10 +14,15 @@ spec:
     spec:
       containers:
       - name: compute-worker
-        image: aravindreddy9548/unit-converter-compute:latest # <-- Your image
-        imagePullPolicy: Always # Always pull the newest version
+        image: aravindreddy9548/unit-converter-compute:latest
+        imagePullPolicy: Always
         env:
           - name: KAFKA_HOST
-            value: "kafka-new:29092" # <-- Connects to the Kafka Service
+            value: "kafka-new:29092"
           - name: DB_HOST
-            value: "mongodb"         # <-- Connects to the Mongo Service
+            value: "mongodb"
+          # --- DEBUGGING VARIABLES ---
+          - name: NODE_ENV
+            value: "development"
+          - name: KAFKAJS_LOG_LEVEL
+            value: "debug"
