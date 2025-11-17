@@ -1,64 +1,89 @@
 pipeline {
-    // This agent is your Windows machine
     agent any 
 
     environment {
-        // Your Docker Hub username
         DOCKERHUB_USERNAME = 'aravindreddy9548'
-        
-        // The Jenkins Credential ID for Docker Hub
         DOCKERHUB_CREDS = 'dockerhub-creds' 
-        
-        // The Jenkins Credential ID for your Kubeconfig file
         KUBECONFIG_CREDS = 'kubeconfig-minikube'
     }
 
     stages {
         
+        stage('Debug Environment') {
+            steps {
+                echo '--- DEBUGGING ENVIRONMENT ---'
+                // 1. Check if Docker is found
+                bat 'where docker'
+                // 2. Check if Docker engine is running
+                bat 'docker info'
+                // 3. Check if kubectl is found
+                bat 'where kubectl'
+                // 4. Check if kubectl can talk to Minikube
+                withCredentials([file(credentialsId: KUBECONFIG_CREDS, variable: 'KUBECONFIG_FILE')]) {
+                    bat '''
+                        @echo on
+                        set KUBECONFIG=%KUBECONFIG_FILE%
+                        kubectl version --client
+                    '''
+                }
+            }
+        }
+
         stage('Build Docker Images') {
             steps {
                 echo 'Building Frontend image...'
-                bat 'docker build -t ${DOCKERHUB_USERNAME}/unit-converter-frontend:latest ./frontend'
+                // Added @echo on to see the full command
+                bat '''
+                    @echo on
+                    docker build -t %DOCKERHUB_USERNAME%/unit-converter-frontend:latest ./frontend
+                '''
                 
                 echo 'Building API Server image...'
-                bat 'docker build -t ${DOCKERHUB_USERNAME}/unit-converter-api:latest ./api-server'
+                bat '''
+                    @echo on
+                    docker build -t %DOCKERHUB_USERNAME%/unit-converter-api:latest ./api-server
+                '''
 
                 echo 'Building Compute Worker image...'
-                bat 'docker build -t ${DOCKERHUB_USERNAME}/unit-converter-compute:latest ./compute-worker'
+                bat '''
+                    @echo on
+                    docker build -t %DOCKERHUB_USERNAME%/unit-converter-compute:latest ./compute-worker
+                '''
             }
         }
 
         stage('Push to Docker Hub') {
             steps {
                 echo 'Logging in to Docker Hub...'
-                // Logs in using the Jenkins credential
                 withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDS, usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-                    bat "docker login -u %USER% -p %PASS%"
+                    bat '''
+                        @echo on
+                        docker login -u %USER% -p %PASS%
+                    '''
                 }
                 
-                echo 'Pushing Frontend image...'
-                bat "docker push %DOCKERHUB_USERNAME%/unit-converter-frontend:latest"
-                
-                echo 'Pushing API image...'
-                bat "docker push %DOCKERHUB_USERNAME%/unit-converter-api:latest"
-                
-                echo 'Pushing Compute image...'
-                bat "docker push %DOCKERHUB_USERNAME%/unit-converter-compute:latest"
+                echo 'Pushing images...'
+                bat '''
+                    @echo on
+                    docker push %DOCKERHUB_USERNAME%/unit-converter-frontend:latest
+                    docker push %DOCKERHUB_USERNAME%/unit-converter-api:latest
+                    docker push %DOCKERHUB_USERNAME%/unit-converter-compute:latest
+                '''
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
                 echo 'Deploying to Minikube cluster...'
-                
-                // This loads your kubeconfig file into a temporary variable
                 withCredentials([file(credentialsId: KUBECONFIG_CREDS, variable: 'KUBECONFIG_FILE')]) {
-                    
-                    // This tells kubectl to use that specific config file
-                    // and apply all .yml files in your 'k8s' folder
                     bat '''
+                        @echo on
                         set KUBECONFIG=%KUBECONFIG_FILE%
+                        echo Applying configurations...
                         kubectl apply -f k8_s/
+                        
+                        echo Force restarting pods...
+                        kubectl delete pods --all
                     '''
                 }
             }
@@ -66,10 +91,10 @@ pipeline {
     }
     
     post {
-        // This 'post' block always runs to log you out
         always {
             echo 'Logging out of Docker Hub...'
-            bat 'docker logout'
+            // We use try/catch in shell logic (|| exit 0) to ensure it doesn't fail the build
+            bat 'docker logout || exit 0'
         }
     }
 }
